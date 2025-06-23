@@ -1,6 +1,6 @@
-package com.brijesh.expense_tracker.repository;
+package com.brijesh.ExpenseTracker.repository;
 
-import com.brijesh.expense_tracker.entity.Expense;
+import com.brijesh.ExpenseTracker.entity.Expense;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

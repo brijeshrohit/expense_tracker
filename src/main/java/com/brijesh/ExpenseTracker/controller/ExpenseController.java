@@ -1,7 +1,7 @@
-package com.brijesh.expense_tracker.controller;
+package com.brijesh.ExpenseTracker.controller;
 
-import com.brijesh.expense_tracker.entity.Expense;
-import com.brijesh.expense_tracker.service.ExpenseService;
+import com.brijesh.ExpenseTracker.entity.Expense;
+import com.brijesh.ExpenseTracker.service.ExpenseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

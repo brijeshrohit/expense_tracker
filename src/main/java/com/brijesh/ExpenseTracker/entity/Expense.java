@@ -1,5 +1,6 @@
-package com.brijesh.expense_tracker.entity;
+package com.brijesh.ExpenseTracker.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,6 +23,7 @@ public class Expense {
     private String description;
 
     @Column(nullable = false)
+    @JsonFormat(pattern = "dd-MM-yyyy")
     private Date date;
 
     @Column(nullable = false)

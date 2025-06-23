@@ -1,7 +1,7 @@
-package com.brijesh.expense_tracker.service;
+package com.brijesh.ExpenseTracker.service;
 
-import com.brijesh.expense_tracker.entity.Expense;
-import com.brijesh.expense_tracker.repository.ExpenseRepository;
+import com.brijesh.ExpenseTracker.entity.Expense;
+import com.brijesh.ExpenseTracker.repository.ExpenseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

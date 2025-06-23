@@ -1,4 +1,4 @@
-package com.brijesh.expense_tracker.utils;
+package com.brijesh.ExpenseTracker.utils;
 
 public enum ExpenseCategories {
     FIXED,
