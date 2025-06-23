@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/expense")
 public class ExpenseController {
@@ -25,6 +28,12 @@ public class ExpenseController {
     public ResponseEntity<Expense> addExpense(@RequestBody Expense expense){
         Expense newExpense = expenseService.addExpense(expense);
         return ResponseEntity.ok(newExpense);
+    }
+
+    @PostMapping("/getExpesneAfterdate")
+    public ResponseEntity<List<Expense>> getExpenseAfterDate(@RequestBody LocalDate date){
+        List<Expense> expenseList = expenseService.getExpenseByDate(date);
+        return ResponseEntity.ok(expenseList);
     }
 
 
