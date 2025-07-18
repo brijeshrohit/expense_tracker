@@ -57,7 +57,7 @@ public class ExpenseService {
         if (month < 1 || month > 12) {
             throw new IllegalArgumentException("Invalid month. It should be between 1 and 12.");
         }
-        if (year < currentYear - 1 || year > currentYear) {
+        if (year > currentYear) {
             throw new IllegalArgumentException("Invalid year. Only current or previous year is allowed.");
         }
     }
