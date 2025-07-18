@@ -4,6 +4,7 @@ import com.brijesh.ExpenseTracker.dto.ExpenseAnalysisDTO;
 import com.brijesh.ExpenseTracker.entity.Expense;
 import com.brijesh.ExpenseTracker.repository.ExpenseRepository;
 import com.brijesh.ExpenseTracker.utils.ExpenseCategory;
+import com.brijesh.ExpenseTracker.utils.ExpenseTag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,10 +17,12 @@ public class ExpenseService {
     private ExpenseRepository repository;
 
     public Expense saveExpense(Expense expense) {
+        validateEnumValues(expense);
         return repository.save(expense);
     }
 
     public Expense updateExpense(String id, Expense updatedExpense) {
+        validateEnumValues(updatedExpense);
         return repository.findById(id).map(expense -> {
             updatedExpense.setId(id);
             return repository.save(updatedExpense);
@@ -57,8 +60,18 @@ public class ExpenseService {
         if (month < 1 || month > 12) {
             throw new IllegalArgumentException("Invalid month. It should be between 1 and 12.");
         }
-        if (year > currentYear) {
+        if (year < currentYear - 1 || year > currentYear) {
             throw new IllegalArgumentException("Invalid year. Only current or previous year is allowed.");
+        }
+    }
+
+    private void validateEnumValues(Expense expense) {
+        if (expense.getCategory() == null || expense.getTag() == null) {
+            throw new IllegalArgumentException("Category and Tag cannot be null.");
+        }
+        boolean isValid = EnumSet.allOf(ExpenseTag.class).contains(expense.getTag());
+        if (!isValid) {
+            throw new IllegalArgumentException("Invalid tag: " + expense.getTag());
         }
     }
 
