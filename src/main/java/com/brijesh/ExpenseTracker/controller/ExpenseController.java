@@ -1,48 +1,54 @@
 package com.brijesh.ExpenseTracker.controller;
 
+import com.brijesh.ExpenseTracker.dto.ExpenseAnalysisDTO;
 import com.brijesh.ExpenseTracker.entity.Expense;
 import com.brijesh.ExpenseTracker.service.ExpenseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/expense")
+@RequestMapping("/api/expenses")
 public class ExpenseController {
 
-    private final ExpenseService expenseService;
-
     @Autowired
-    public ExpenseController(ExpenseService expenseService) {
-        this.expenseService = expenseService;
+    private ExpenseService service;
+
+    @PostMapping
+    public ResponseEntity<Expense> addExpense(@RequestBody Expense expense) {
+        return ResponseEntity.ok(service.saveExpense(expense));
     }
 
-    //    add expenses
-    @PostMapping("/addexpense")
-    public ResponseEntity<Expense> addExpense(@RequestBody Expense expense){
-        Expense newExpense = expenseService.addExpense(expense);
-        return ResponseEntity.ok(newExpense);
+    @GetMapping
+    public ResponseEntity<List<Expense>> getAllExpenses() {
+        return ResponseEntity.ok(service.getAllExpenses());
     }
 
-    @PostMapping("/getExpesneAfterdate")
-    public ResponseEntity<List<Expense>> getExpenseAfterDate(@RequestBody LocalDate date){
-        List<Expense> expenseList = expenseService.getExpenseByDate(date);
-        return ResponseEntity.ok(expenseList);
+    @GetMapping("/{id}")
+    public ResponseEntity<Expense> getExpenseById(@PathVariable String id) {
+        Optional<Expense> expense = service.getExpenseById(id);
+        return expense.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteExpense(@PathVariable String id) {
+        service.deleteExpense(id);
+        return ResponseEntity.noContent().build();
+    }
 
-//    get all expenses
-//    delete expenses
-//    update expenses
+    @GetMapping("/monthly")
+    public ResponseEntity<ExpenseAnalysisDTO> getMonthlyReport(
+            @RequestParam int month,
+            @RequestParam int year) {
+        return ResponseEntity.ok(service.getMonthlyAnalysis(month, year));
+    }
 
-//    get expenses by id
-
-//    get expenses by category
-//    get expenses by tag
+    @GetMapping("/yearly")
+    public ResponseEntity<ExpenseAnalysisDTO> getYearlyReport(@RequestParam int year) {
+        return ResponseEntity.ok(service.getYearlyAnalysis(year));
+    }
 }

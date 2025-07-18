@@ -9,6 +9,9 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Repository
-public interface ExpenseRepository extends JpaRepository<Expense, Long> {
-    List<Expense> getAllExpenseAfter(LocalDate date);
+public interface ExpenseRepository extends JpaRepository<Expense, String> {
+    List<Expense> findAllByDateBetween(LocalDate start, LocalDate end);
+
+    @Query("SELECT e FROM Expense e WHERE YEAR(e.date) = ?1")
+    List<Expense> findAllByYear(int year);
 }

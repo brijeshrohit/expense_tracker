@@ -1,37 +1,39 @@
 package com.brijesh.ExpenseTracker.entity;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.brijesh.ExpenseTracker.utils.ExpenseCategory;
+import com.brijesh.ExpenseTracker.utils.ExpenseTag;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
-import java.util.Date;
+import java.time.LocalDate;
+import java.util.UUID;
 
 @Entity
 @Table(name = "expense")
 @NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
+@Builder
 public class Expense {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id = UUID.randomUUID().toString();
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ExpenseCategory category;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ExpenseTag tag;
+
+    @Column(nullable = false)
+    private LocalDate date;
 
     @Column(nullable = false)
     private String description;
 
     @Column(nullable = false)
-    @JsonFormat(pattern = "dd-MM-yyyy")
-    private Date date;
-
-    @Column(nullable = false)
     private double amount;
-
-    @Column(nullable = false)
-    private String category;
-
-    @Column(nullable = true)
-    private String tag;
 }

@@ -1,9 +1,9 @@
 package com.brijesh.ExpenseTracker.utils;
 
-public enum ExpenseCategories {
+public enum ExpenseCategory {
     FIXED,
     VARIABLE,
     INVESTMENT,
-    TERM_LIFE,
+    INSURANCE,
     MISCELLANEOUS
 }
