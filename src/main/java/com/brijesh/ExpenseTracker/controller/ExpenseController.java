@@ -18,12 +18,17 @@ public class ExpenseController {
     @Autowired
     private ExpenseService service;
 
-    @PostMapping
+    @PostMapping("/add")
     public ResponseEntity<Expense> addExpense(@RequestBody Expense expense) {
         return ResponseEntity.ok(service.saveExpense(expense));
     }
 
-    @GetMapping
+    @PutMapping("/update/{id}")
+    public ResponseEntity<Expense> updateExpense(@PathVariable String id, @RequestBody Expense expense) {
+        return ResponseEntity.ok(service.updateExpense(id, expense));
+    }
+
+    @GetMapping("/all")
     public ResponseEntity<List<Expense>> getAllExpenses() {
         return ResponseEntity.ok(service.getAllExpenses());
     }
@@ -34,7 +39,7 @@ public class ExpenseController {
         return expense.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void> deleteExpense(@PathVariable String id) {
         service.deleteExpense(id);
         return ResponseEntity.noContent().build();

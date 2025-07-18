@@ -19,6 +19,13 @@ public class ExpenseService {
         return repository.save(expense);
     }
 
+    public Expense updateExpense(String id, Expense updatedExpense) {
+        return repository.findById(id).map(expense -> {
+            updatedExpense.setId(id);
+            return repository.save(updatedExpense);
+        }).orElseThrow(() -> new NoSuchElementException("Expense not found with id: " + id));
+    }
+
     public List<Expense> getAllExpenses() {
         return repository.findAll();
     }
@@ -50,7 +57,7 @@ public class ExpenseService {
         if (month < 1 || month > 12) {
             throw new IllegalArgumentException("Invalid month. It should be between 1 and 12.");
         }
-        if (year > currentYear) {
+        if (year < currentYear - 1 || year > currentYear) {
             throw new IllegalArgumentException("Invalid year. Only current or previous year is allowed.");
         }
     }
