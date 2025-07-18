@@ -14,4 +14,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, String> {
 
     @Query("SELECT e FROM Expense e WHERE YEAR(e.date) = ?1")
     List<Expense> findAllByYear(int year);
+
+    List<Expense> findByDateAfter(LocalDate date);
 }

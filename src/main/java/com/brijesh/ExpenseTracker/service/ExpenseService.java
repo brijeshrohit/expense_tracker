@@ -5,9 +5,15 @@ import com.brijesh.ExpenseTracker.entity.Expense;
 import com.brijesh.ExpenseTracker.repository.ExpenseRepository;
 import com.brijesh.ExpenseTracker.utils.ExpenseCategory;
 import com.brijesh.ExpenseTracker.utils.ExpenseTag;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -41,6 +47,32 @@ public class ExpenseService {
         repository.deleteById(id);
     }
 
+    public List<Expense> getExpensesAfterDate(LocalDate date) {
+        return repository.findByDateAfter(date);
+    }
+
+    public ByteArrayInputStream exportExpensesToCSV() throws Exception {
+        List<Expense> expenses = repository.findAll();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Writer writer = new OutputStreamWriter(out);
+
+        try (CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT
+                .withHeader("ID", "Category", "Tag", "Date", "Description", "Amount"))) {
+            for (Expense e : expenses) {
+                csvPrinter.printRecord(
+                        e.getId(),
+                        e.getCategory(),
+                        e.getTag(),
+                        e.getDate(),
+                        e.getDescription(),
+                        e.getAmount()
+                );
+            }
+        }
+
+        return new ByteArrayInputStream(out.toByteArray());
+    }
+
     public ExpenseAnalysisDTO getMonthlyAnalysis(int month, int year) {
         validateMonthYear(month, year);
         LocalDate start = LocalDate.of(year, month, 1);
@@ -50,7 +82,7 @@ public class ExpenseService {
     }
 
     public ExpenseAnalysisDTO getYearlyAnalysis(int year) {
-        validateMonthYear(1, year); // dummy month for year-only check
+        validateMonthYear(1, year);
         List<Expense> expenses = repository.findAllByYear(year);
         return buildAnalysis(expenses);
     }
