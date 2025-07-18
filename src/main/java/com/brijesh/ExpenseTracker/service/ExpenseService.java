@@ -5,132 +5,96 @@ import com.brijesh.ExpenseTracker.entity.Expense;
 import com.brijesh.ExpenseTracker.repository.ExpenseRepository;
 import com.brijesh.ExpenseTracker.utils.ExpenseCategory;
 import com.brijesh.ExpenseTracker.utils.ExpenseTag;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.time.LocalDate;
 import java.util.*;
 
 @Service
 public class ExpenseService {
+
     @Autowired
-    private ExpenseRepository repository;
+    private ExpenseRepository expenseRepository;
 
-    public Expense saveExpense(Expense expense) {
-        validateEnumValues(expense);
-        return repository.save(expense);
-    }
+    @Autowired
+    private BudgetLimitService budgetLimitService;
 
-    public Expense updateExpense(String id, Expense updatedExpense) {
-        validateEnumValues(updatedExpense);
-        return repository.findById(id).map(expense -> {
-            updatedExpense.setId(id);
-            return repository.save(updatedExpense);
-        }).orElseThrow(() -> new NoSuchElementException("Expense not found with id: " + id));
+    public String saveExpenseWithBudgetCheck(Expense expense) {
+        Double currentTotal = expenseRepository
+                .findByCategoryAndTagAndMonthYear(
+                        expense.getCategory(), expense.getTag(),
+                        expense.getDate().getMonthValue(), expense.getDate().getYear())
+                .stream().mapToDouble(Expense::getAmount).sum();
+
+        Double limit = budgetLimitService.getLimit(expense.getCategory(), expense.getTag());
+
+        if (limit != null && currentTotal + expense.getAmount() > limit) {
+            return "Warning: Budget limit exceeded for " + expense.getTag();
+        }
+
+        expenseRepository.save(expense);
+        return "Expense saved successfully";
     }
 
     public List<Expense> getAllExpenses() {
-        return repository.findAll();
+        return expenseRepository.findAll();
     }
 
-    public Optional<Expense> getExpenseById(String id) {
-        return repository.findById(id);
+    public void deleteExpense(Long id) {
+        expenseRepository.deleteById(id);
     }
 
-    public void deleteExpense(String id) {
-        repository.deleteById(id);
-    }
-
-    public List<Expense> getExpensesAfterDate(LocalDate date) {
-        return repository.findByDateAfter(date);
-    }
-
-    public ByteArrayInputStream exportExpensesToCSV() throws Exception {
-        List<Expense> expenses = repository.findAll();
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        Writer writer = new OutputStreamWriter(out);
-
-        try (CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT
-                .withHeader("ID", "Category", "Tag", "Date", "Description", "Amount"))) {
-            for (Expense e : expenses) {
-                csvPrinter.printRecord(
-                        e.getId(),
-                        e.getCategory(),
-                        e.getTag(),
-                        e.getDate(),
-                        e.getDescription(),
-                        e.getAmount()
-                );
-            }
-        }
-
-        return new ByteArrayInputStream(out.toByteArray());
-    }
-
-    public ExpenseAnalysisDTO getMonthlyAnalysis(int month, int year) {
-        validateMonthYear(month, year);
-        LocalDate start = LocalDate.of(year, month, 1);
-        LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
-        List<Expense> expenses = repository.findAllByDateBetween(start, end);
-        return buildAnalysis(expenses);
+    public ExpenseAnalysisDTO getMonthlyAnalysisWithBudget(int month, int year) {
+        List<Expense> expenses = expenseRepository.findAllByMonthAndYear(month, year);
+        return analyzeExpenses(expenses, month, year);
     }
 
     public ExpenseAnalysisDTO getYearlyAnalysis(int year) {
-        validateMonthYear(1, year);
-        List<Expense> expenses = repository.findAllByYear(year);
-        return buildAnalysis(expenses);
+        List<Expense> expenses = expenseRepository.findAllByYear(year);
+        return analyzeExpenses(expenses, -1, year);
     }
 
-    private void validateMonthYear(int month, int year) {
-        int currentYear = LocalDate.now().getYear();
-        if (month < 1 || month > 12) {
-            throw new IllegalArgumentException("Invalid month. It should be between 1 and 12.");
-        }
-        if (year < currentYear - 1 || year > currentYear) {
-            throw new IllegalArgumentException("Invalid year. Only current or previous year is allowed.");
-        }
-    }
-
-    private void validateEnumValues(Expense expense) {
-        if (expense.getCategory() == null || expense.getTag() == null) {
-            throw new IllegalArgumentException("Category and Tag cannot be null.");
-        }
-        boolean isValid = EnumSet.allOf(ExpenseTag.class).contains(expense.getTag());
-        if (!isValid) {
-            throw new IllegalArgumentException("Invalid tag: " + expense.getTag());
-        }
-    }
-
-    private ExpenseAnalysisDTO buildAnalysis(List<Expense> expenses) {
+    private ExpenseAnalysisDTO analyzeExpenses(List<Expense> expenses, int month, int year) {
         Map<String, Double> categoryTotals = new HashMap<>();
         Map<String, Double> variableTagTotals = new HashMap<>();
         Map<String, Double> miscellaneousTagTotals = new HashMap<>();
+        Map<String, String> budgetWarnings = new HashMap<>();
 
-        for (ExpenseCategory cat : ExpenseCategory.values()) {
-            categoryTotals.put(cat.name(), 0.0);
-        }
+        for (Expense expense : expenses) {
+            String category = expense.getCategory().name();
+            categoryTotals.put(category, categoryTotals.getOrDefault(category, 0.0) + expense.getAmount());
 
-        for (Expense exp : expenses) {
-            categoryTotals.put(exp.getCategory().name(),
-                    categoryTotals.get(exp.getCategory().name()) + exp.getAmount());
-
-            if (exp.getCategory() == ExpenseCategory.VARIABLE) {
-                variableTagTotals.put(exp.getTag().name(),
-                        variableTagTotals.getOrDefault(exp.getTag().name(), 0.0) + exp.getAmount());
+            if (expense.getCategory() == ExpenseCategory.VARIABLE) {
+                String tag = expense.getTag().name();
+                variableTagTotals.put(tag, variableTagTotals.getOrDefault(tag, 0.0) + expense.getAmount());
             }
 
-            if (exp.getCategory() == ExpenseCategory.MISCELLANEOUS) {
-                miscellaneousTagTotals.put(exp.getTag().name(),
-                        miscellaneousTagTotals.getOrDefault(exp.getTag().name(), 0.0) + exp.getAmount());
+            if (expense.getCategory() == ExpenseCategory.MISCELLANEOUS) {
+                String tag = expense.getTag().name();
+                miscellaneousTagTotals.put(tag, miscellaneousTagTotals.getOrDefault(tag, 0.0) + expense.getAmount());
             }
         }
 
-        return new ExpenseAnalysisDTO(categoryTotals, variableTagTotals, miscellaneousTagTotals);
+        variableTagTotals.forEach((tag, total) -> {
+            Double limit = budgetLimitService.getLimit(ExpenseCategory.VARIABLE, ExpenseTag.valueOf(tag));
+            if (limit != null && total > limit) {
+                budgetWarnings.put(tag, "Limit exceeded: " + total + " / " + limit);
+            }
+        });
+
+        miscellaneousTagTotals.forEach((tag, total) -> {
+            Double limit = budgetLimitService.getLimit(ExpenseCategory.MISCELLANEOUS, ExpenseTag.valueOf(tag));
+            if (limit != null && total > limit) {
+                budgetWarnings.put(tag, "Limit exceeded: " + total + " / " + limit);
+            }
+        });
+
+        String topVariableTag = variableTagTotals.entrySet().stream()
+                .max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse(null);
+
+        String topMiscTag = miscellaneousTagTotals.entrySet().stream()
+                .max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse(null);
+
+        return new ExpenseAnalysisDTO(categoryTotals, variableTagTotals, miscellaneousTagTotals, topVariableTag, topMiscTag, budgetWarnings);
     }
 }
+

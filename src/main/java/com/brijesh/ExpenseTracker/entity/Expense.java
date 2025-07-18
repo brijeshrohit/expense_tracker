@@ -18,6 +18,7 @@ import java.util.UUID;
 public class Expense {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private String id = UUID.randomUUID().toString();
 
     @Enumerated(EnumType.STRING)
