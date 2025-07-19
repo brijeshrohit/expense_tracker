@@ -1,9 +1,6 @@
 package com.brijesh.ExpenseAnalysis.service;
 
-import com.brijesh.ExpenseAnalysis.dto.MonthlyAnalysisResponseDTO;
-import com.brijesh.ExpenseAnalysis.dto.MonthlyAnalysisRequestDTO;
-import com.brijesh.ExpenseAnalysis.dto.YearlyAnalysisRequestDTO;
-import com.brijesh.ExpenseAnalysis.dto.YearlyAnalysisResponseDTO;
+import com.brijesh.ExpenseAnalysis.dto.*;
 import com.brijesh.ExpenseAnalysis.entity.Expense;
 import com.brijesh.ExpenseAnalysis.repository.ExpenseRepository;
 import com.brijesh.ExpenseAnalysis.util.*;
@@ -90,7 +87,7 @@ public class ExpenseService {
 
         List<Expense> expenses = expenseRepository.findByDateBetween(startDate, endDate);
 
-        return buildAnalysisResponse(expenses, endDate.getMonthValue(), true);
+        return buildSimplifiedAnalysisResponse(expenses, endDate.getMonthValue(), true);
     }
 
     public MonthlyAnalysisResponseDTO getMonthlyAnalysis(MonthlyAnalysisRequestDTO request) {
@@ -102,89 +99,109 @@ public class ExpenseService {
 
         List<Expense> expenses = expenseRepository.findByDateBetween(startDate, endDate);
 
-        return buildAnalysisResponse(expenses, 1, false);
+        return buildSimplifiedAnalysisResponse(expenses, 1, false);
     }
 
-    private <T> T buildAnalysisResponse(List<Expense> expenses, int monthsCount, boolean isYearly) {
-        Map<String, Map<String, Double>> categoryTagMap = new LinkedHashMap<>();
-        Map<String, Double> categoryExpenseMap = new LinkedHashMap<>();
-        Map<String, Double> categoryBudgetMap = Map.of(
-                "FIXED", BudgetLimitUtil.TOTAL_FIXED_EXPENSE_BUDGET,
-                "VARIABLE", BudgetLimitUtil.TOTAL_VARIABLE_BUDGET,
-                "INVESTMENT", BudgetLimitUtil.TOTAL_INVESTMENT_BUDGET,
-                "INSURANCE", BudgetLimitUtil.TOTAL_INSURANCE_BUDGET
+    private <T> T buildSimplifiedAnalysisResponse(List<Expense> expenses, int monthsCount, boolean isYearly) {
+        Map<String, Double> categoryExpenses = new LinkedHashMap<>();
+        List<CategoryBudgetVsActualDTO> budgetVsActualList = new ArrayList<>();
+        List<TagOverBudgetDTO> tagOverBudgetList = new ArrayList<>();
+        List<MonthBudgetExceedDTO> monthsExceeding = new ArrayList<>();
+
+        Map<String, Double> categoryBudgets = Map.of(
+                "FIXED", BudgetLimitUtil.TOTAL_FIXED_EXPENSE_BUDGET * monthsCount,
+                "VARIABLE", BudgetLimitUtil.TOTAL_VARIABLE_BUDGET * monthsCount,
+                "INVESTMENT", BudgetLimitUtil.TOTAL_INVESTMENT_BUDGET * monthsCount,
+                "INSURANCE", BudgetLimitUtil.TOTAL_INSURANCE_BUDGET * monthsCount
         );
 
         double totalExpense = 0.0;
-        Map<String, Double> monthsTotal = new LinkedHashMap<>();
+        double totalBudget = BudgetLimitUtil.TOTAL_MONTHLY_BUDGET * monthsCount;
 
-        Map<String, Map<String, Double>> overBudgetTags = new HashMap<>();
-        Map<String, Map<String, Double>> overBudgetCategories = new HashMap<>();
+        Map<String, Map<String, Double>> tagWiseExpenses = new LinkedHashMap<>();
+        Map<String, Double> monthlyExpenseMap = new LinkedHashMap<>();
 
-        for (ExpenseCategory category : ExpenseCategory.values()) {
-            Map<String, Double> tagWiseMap = new LinkedHashMap<>();
-            for (Expense expense : expenses) {
-                if (expense.getCategory() == category) {
-                    String tag = expense.getTag().name();
-                    tagWiseMap.put(tag, tagWiseMap.getOrDefault(tag, 0.0) + expense.getAmount());
+        for (Expense expense : expenses) {
+            String category = expense.getCategory().name();
+            String tag = expense.getTag().name();
+            double amount = expense.getAmount();
+            totalExpense += amount;
 
-                    Month expenseMonth = expense.getDate().getMonth();
-                    String monthName = expenseMonth.getDisplayName(TextStyle.FULL, Locale.ENGLISH);
-                    monthsTotal.put(monthName, monthsTotal.getOrDefault(monthName, 0.0) + expense.getAmount());
-                }
+            categoryExpenses.put(category, categoryExpenses.getOrDefault(category, 0.0) + amount);
+
+            tagWiseExpenses.putIfAbsent(category, new LinkedHashMap<>());
+            Map<String, Double> tagMap = tagWiseExpenses.get(category);
+            tagMap.put(tag, tagMap.getOrDefault(tag, 0.0) + amount);
+
+            if (isYearly) {
+                String monthName = expense.getDate().getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+                monthlyExpenseMap.put(monthName, monthlyExpenseMap.getOrDefault(monthName, 0.0) + amount);
             }
-            categoryTagMap.put(category.name(), tagWiseMap);
-            categoryExpenseMap.put(category.name(), tagWiseMap.values().stream().mapToDouble(Double::doubleValue).sum());
         }
 
-        for (String category : categoryBudgetMap.keySet()) {
-            double budget = categoryBudgetMap.get(category) * monthsCount;
-            double actual = categoryExpenseMap.getOrDefault(category, 0.0);
+        for (String category : categoryBudgets.keySet()) {
+            double budget = categoryBudgets.get(category);
+            double actual = categoryExpenses.getOrDefault(category, 0.0);
+
+            budgetVsActualList.add(CategoryBudgetVsActualDTO.builder()
+                    .category(category)
+                    .budget(budget)
+                    .actual(actual)
+                    .build());
+
             if (actual > budget) {
-                overBudgetCategories.put(category, Map.of("budget", budget, "actual", actual));
-
-                Map<String, Double> tags = categoryTagMap.get(category);
-                Map<String, Double> tagExceed = new LinkedHashMap<>();
-
-                for (String tag : tags.keySet()) {
-                    double actualTagAmt = tags.get(tag);
-                    double tagBudget = BudgetLimitUtil.TAG_BUDGETS.getOrDefault(ExpenseTag.valueOf(tag), Double.MAX_VALUE) * monthsCount;
-                    if (actualTagAmt > tagBudget) {
-                        tagExceed.put(tag, actualTagAmt - tagBudget);
+                Map<String, Double> tagMap = tagWiseExpenses.getOrDefault(category, Collections.emptyMap());
+                for (Map.Entry<String, Double> entry : tagMap.entrySet()) {
+                    double tagBudget = BudgetLimitUtil.TAG_BUDGETS.getOrDefault(ExpenseTag.valueOf(entry.getKey()), Double.MAX_VALUE) * monthsCount;
+                    if (entry.getValue() > tagBudget) {
+                        tagOverBudgetList.add(TagOverBudgetDTO.builder()
+                                .category(category)
+                                .tag(entry.getKey())
+                                .budget(tagBudget)
+                                .actual(entry.getValue())
+                                .exceededBy(entry.getValue() - tagBudget)
+                                .build());
                     }
                 }
-                if (!tagExceed.isEmpty()) overBudgetTags.put(category, tagExceed);
             }
         }
 
-        double totalBudget = BudgetLimitUtil.TOTAL_MONTHLY_BUDGET * monthsCount;
-        totalExpense = categoryExpenseMap.values().stream().mapToDouble(Double::doubleValue).sum();
-
-        Map<String, Object> summary = Map.of(
-                "totalExpense", totalExpense,
-                "totalBudget", totalBudget,
-                "budgetRemaining", totalBudget - totalExpense
-        );
-
-        Map<String, Double> monthsExceeding = monthsTotal.entrySet().stream()
-                .filter(e -> e.getValue() > BudgetLimitUtil.TOTAL_MONTHLY_BUDGET)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        SummaryDTO summary = SummaryDTO.builder()
+                .totalExpense(totalExpense)
+                .totalBudget(totalBudget)
+                .budgetRemaining(totalBudget - totalExpense)
+                .build();
 
         if (isYearly) {
+            monthlyExpenseMap.forEach((month, expense) -> {
+                if (expense > BudgetLimitUtil.TOTAL_MONTHLY_BUDGET) {
+                    monthsExceeding.add(MonthBudgetExceedDTO.builder()
+                            .month(month)
+                            .expense(expense)
+                            .build());
+                }
+            });
+
+            List<CategoryExpenseDTO> categoryExpenseDTOList = categoryExpenses.entrySet().stream()
+                    .map(e -> CategoryExpenseDTO.builder().category(e.getKey()).amount(e.getValue()).build())
+                    .collect(Collectors.toList());
+
             return (T) YearlyAnalysisResponseDTO.builder()
-                    .categoryTagWiseExpenses(categoryTagMap)
-                    .categoryBudgetVsExpense(Map.of("Budget", categoryBudgetMap, "Actual", categoryExpenseMap))
-                    .overBudgetCategories(overBudgetCategories)
-                    .overBudgetTagsInOverBudgetCategories(overBudgetTags)
+                    .categoryExpenses(categoryExpenseDTOList)
+                    .budgetVsActual(budgetVsActualList)
+                    .tagOverBudgetDetails(tagOverBudgetList)
                     .summary(summary)
                     .monthsExceedingBudget(monthsExceeding)
                     .build();
         } else {
+            List<CategoryExpenseDTO> categoryExpenseDTOList = categoryExpenses.entrySet().stream()
+                    .map(e -> CategoryExpenseDTO.builder().category(e.getKey()).amount(e.getValue()).build())
+                    .collect(Collectors.toList());
+
             return (T) MonthlyAnalysisResponseDTO.builder()
-                    .categoryTagWiseExpenses(categoryTagMap)
-                    .categoryBudgetVsExpense(Map.of("Budget", categoryBudgetMap, "Actual", categoryExpenseMap))
-                    .overBudgetCategories(overBudgetCategories)
-                    .overBudgetTagsInOverBudgetCategories(overBudgetTags)
+                    .categoryExpenses(categoryExpenseDTOList)
+                    .budgetVsActual(budgetVsActualList)
+                    .tagOverBudgetDetails(tagOverBudgetList)
                     .summary(summary)
                     .build();
         }

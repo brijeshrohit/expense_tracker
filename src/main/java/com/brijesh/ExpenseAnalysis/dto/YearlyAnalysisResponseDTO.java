@@ -5,18 +5,18 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Map;
+import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class YearlyAnalysisResponseDTO {
-    private Map<String, Map<String, Double>> categoryTagWiseExpenses;
-    private Map<String, Object> categoryBudgetVsExpense;
-    private Map<String, Map<String, Double>> overBudgetCategories;
-    private Map<String, Map<String, Double>> overBudgetTagsInOverBudgetCategories;
-    private Map<String, Object> summary;
-    private Map<String, Double> monthsExceedingBudget;
+    private List<CategoryExpenseDTO> categoryExpenses;
+    private List<CategoryBudgetVsActualDTO> budgetVsActual;
+    private List<TagOverBudgetDTO> tagOverBudgetDetails;
+    private SummaryDTO summary;
+    private List<MonthBudgetExceedDTO> monthsExceedingBudget;
 }
+
 

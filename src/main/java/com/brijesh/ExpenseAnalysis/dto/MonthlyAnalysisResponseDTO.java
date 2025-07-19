@@ -5,17 +5,17 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Map;
+import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class MonthlyAnalysisResponseDTO {
-    private Map<String, Map<String, Double>> categoryTagWiseExpenses;
-    private Map<String, Object> categoryBudgetVsExpense;
-    private Map<String, Map<String, Double>> overBudgetCategories;
-    private Map<String, Map<String, Double>> overBudgetTagsInOverBudgetCategories;
-    private Map<String, Object> summary;
+    private List<CategoryExpenseDTO> categoryExpenses;          // for Pie Chart
+    private List<CategoryBudgetVsActualDTO> budgetVsActual;     // for Bar Graph
+    private List<TagOverBudgetDTO> tagOverBudgetDetails;        // optional, only if any tag crossed
+    private SummaryDTO summary;                                 // total, budget, remaining
 }
+
 
