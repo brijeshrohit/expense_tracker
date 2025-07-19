@@ -79,6 +79,28 @@ public class ExpenseService {
         return false;
     }
 
+    public List<Expense> getMonthlyExpenses(MonthlyAnalysisRequestDTO request) {
+        Month month = Month.valueOf(request.getMonth().toUpperCase());
+        int year = request.getYear();
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = LocalDate.now().withDayOfMonth(1).equals(startDate)
+                ? LocalDate.now()
+                : startDate.withDayOfMonth(startDate.lengthOfMonth());
+
+        return expenseRepository.findByDateBetween(startDate, endDate);
+    }
+
+    public List<Expense> getYearlyExpenses(YearlyAnalysisRequestDTO request) {
+        int year = request.getYear();
+        LocalDate startDate = LocalDate.of(year, 1, 1);
+        LocalDate endDate = LocalDate.now().isBefore(LocalDate.of(year, 12, 31))
+                ? LocalDate.now()
+                : LocalDate.of(year, 12, 31);
+
+        return expenseRepository.findByDateBetween(startDate, endDate);
+    }
+
+
     public YearlyAnalysisResponseDTO getYearlyAnalysis(YearlyAnalysisRequestDTO request) {
         int year = request.getYear();
         LocalDate startDate = LocalDate.of(year, 1, 1);

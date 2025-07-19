@@ -60,5 +60,17 @@ public class ExpenseController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/monthly-expenses")
+    public ResponseEntity<List<Expense>> getMonthlyExpenses(@RequestBody MonthlyAnalysisRequestDTO request) {
+        List<Expense> expenses = expenseService.getMonthlyExpenses(request);
+        return ResponseEntity.ok(expenses);
+    }
+
+    @PostMapping("/yearly-expenses")
+    public ResponseEntity<List<Expense>> getYearlyExpenses(@RequestBody YearlyAnalysisRequestDTO request) {
+        List<Expense> expenses = expenseService.getYearlyExpenses(request);
+        return ResponseEntity.ok(expenses);
+    }
+
 }
 
