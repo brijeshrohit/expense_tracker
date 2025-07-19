@@ -1,19 +1,19 @@
-package com.brijesh.ExpenseTracker.utils;
+package com.brijesh.ExpenseAnalysis.util;
 
 public enum ExpenseTag {
-//    FIXED
+    //    FIXED
     RENT, ELECTRICITY, INTERNET, COOK, CLEANER, DAIRY, FURNITURE_RENT,
 
-//    VARIABLE
+    //    VARIABLE
     PETROL, GROCERIES, ZOMATO_BLINKIT_BIGBASKET, CHAI_NASHTA, SHOPPING, DRY_FRUITS,
 
-//    INVESTMENT
+    //    INVESTMENT
     SIP_LONG_TERM, SIP_SHORT_TERM,
 
-//    INSURANCE
+    //    INSURANCE
     TERM_LIFE,
 
-//    MISCELLANEOUS
+    //    MISCELLANEOUS
     TRAIN_TICKET, FLIGHT_TICKET, CYLINDER, GROOMING, URBAN_CLAP, SEND_ME, UDHAR, CUSTOM
 
 }

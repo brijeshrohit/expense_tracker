@@ -1,7 +1,7 @@
-package com.brijesh.ExpenseTracker.entity;
+package com.brijesh.ExpenseAnalysis.entity;
 
-import com.brijesh.ExpenseTracker.utils.ExpenseCategory;
-import com.brijesh.ExpenseTracker.utils.ExpenseTag;
+import com.brijesh.ExpenseAnalysis.util.ExpenseCategory;
+import com.brijesh.ExpenseAnalysis.util.ExpenseTag;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,8 +18,8 @@ import java.util.UUID;
 public class Expense {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String id = UUID.randomUUID().toString();
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
