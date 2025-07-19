@@ -3,17 +3,17 @@ package com.brijesh.ExpenseAnalysis.service;
 import com.brijesh.ExpenseAnalysis.entity.Expense;
 import com.brijesh.ExpenseAnalysis.repository.ExpenseRepository;
 import com.brijesh.ExpenseAnalysis.util.BudgetLimitUtil;
+import com.brijesh.ExpenseAnalysis.util.ExpenseTag;
 import com.brijesh.ExpenseAnalysis.util.ExpenseValidationMap;
 import com.brijesh.ExpenseAnalysis.util.StatusMap;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.swing.plaf.synth.SynthTextAreaUI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDate;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -65,10 +65,19 @@ public class ExpenseService {
         return response;
     }
 
-
     public List<Expense> getAllExpenses() {
         List<Expense> expenseList = expenseRepository.findAll();
         log.info("Found {} expense", expenseList.size());
         return expenseList;
     }
+
+    public boolean deleteExpenseById(Long id) {
+        Optional<Expense> optionalExpense = expenseRepository.findById(id);
+        if (optionalExpense.isPresent()) {
+            expenseRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+
 }
