@@ -8,6 +8,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
+import java.util.List;
+
 @Repository
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
@@ -20,5 +23,5 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.tag = :tag AND MONTH(e.date) = :month AND YEAR(e.date) = :year")
     double sumMonthlyTagTotal(@Param("tag") ExpenseTag tag, @Param("month") int month, @Param("year") int year);
 
-
+    List<Expense> findByDateBetween(LocalDate startDate, LocalDate endDate);
 }

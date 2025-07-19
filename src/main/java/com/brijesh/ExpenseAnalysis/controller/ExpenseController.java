@@ -1,5 +1,9 @@
 package com.brijesh.ExpenseAnalysis.controller;
 
+import com.brijesh.ExpenseAnalysis.dto.MonthlyAnalysisResponseDTO;
+import com.brijesh.ExpenseAnalysis.dto.MonthlyAnalysisRequestDTO;
+import com.brijesh.ExpenseAnalysis.dto.YearlyAnalysisRequestDTO;
+import com.brijesh.ExpenseAnalysis.dto.YearlyAnalysisResponseDTO;
 import com.brijesh.ExpenseAnalysis.entity.Expense;
 import com.brijesh.ExpenseAnalysis.service.ExpenseService;
 import com.brijesh.ExpenseAnalysis.util.StatusMap;
@@ -8,7 +12,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -43,6 +46,18 @@ public class ExpenseController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", "Expense not found with ID: " + id));
         }
+    }
+
+    @PostMapping("/monthly-analysis")
+    public ResponseEntity<?> getMonthlyAnalysis(@RequestBody MonthlyAnalysisRequestDTO request) {
+        MonthlyAnalysisResponseDTO response = expenseService.getMonthlyAnalysis(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/yearly-analysis")
+    public ResponseEntity<YearlyAnalysisResponseDTO> getYearlyAnalysis(@RequestBody YearlyAnalysisRequestDTO request) {
+        YearlyAnalysisResponseDTO response = expenseService.getYearlyAnalysis(request);
+        return ResponseEntity.ok(response);
     }
 
 }
